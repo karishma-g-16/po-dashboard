@@ -158,6 +158,7 @@ async def upload_file(
             four_percent_amount=gst_data['four_percent_amount'],
             credit_days=data['credit_days'],
             order_tracking=data['order_tracking'],
+            ordered_quantity=data.get('ordered_quantity', 0),
             file_path=file_path,
             file_type=file_ext,
             status='Completed',
@@ -274,12 +275,26 @@ async def export_excel(
 
 @router.get("/list")
 async def get_list(
+    search: str = None,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
     """Get all POs (Public)"""
     try:
-        pos = db.query(PurchaseOrder).order_by(PurchaseOrder.created_at.desc()).all()
+        query = db.query(PurchaseOrder)
+        
+        if search:
+            search_term = f"%{search}%"
+            from sqlalchemy import or_
+            query = query.filter(
+                or_(
+                    PurchaseOrder.company_name.ilike(search_term),
+                    PurchaseOrder.vendor_name.ilike(search_term),
+                    PurchaseOrder.order_tracking.ilike(search_term)
+                )
+            )
+            
+        pos = query.order_by(PurchaseOrder.created_at.desc()).all()
         
         return {
             "success": True,
@@ -294,6 +309,7 @@ async def get_list(
                     "four_percent_amount": po.four_percent_amount,
                     "credit_days": po.credit_days,
                     "order_tracking": po.order_tracking,
+                    "ordered_quantity": po.ordered_quantity,
                     "status": po.status,
                     "uploaded_at": po.uploaded_at.isoformat() if po.uploaded_at else None
                 }

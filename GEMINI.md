@@ -15,12 +15,15 @@ All calculations are derived from the **Total Amount (Inclusive of 18% GST)**:
 ### 2. Tech Stack (Updated)
 - **Backend**: FastAPI (Python) + SQLAlchemy ORM.
 - **Frontend**: React (Vite) + Tailwind CSS + Lucide Icons.
-- **Processing**: Synchronous processing directly within FastAPI.
-- **OCR Engine**: **EasyOCR** with specialized image preprocessing (Grayscale + Contrast + Sharpness) for high accuracy on screenshots.
+- **Unified Processing**: Centralized extraction in `backend/utils/document_processor.py` handling all file types.
+- **OCR Engine**: **EasyOCR** with advanced image preprocessing (2200px Resizing + Autocontrast + Sharpening) for high accuracy on screenshots and photos.
 - **Database**: PostgreSQL.
 
-### 3. OCR & Extraction Logic
-- **Targeted Extractor**: Uses `AmountExtractor` to prioritize bottom-most "Total" keywords (Grand Total, Net Payable, etc.), handling OCR artifacts like `ī`, `` and corrupted symbols.
+### 3. OCR & Extraction Logic (High Precision)
+- **Multi-Modal Validation**: Uses `AmountExtractor` to anchor numeric totals to extracted "Amount in Words" (e.g., Lakhs, Crore). This ensures million-scale numbers are prioritized over smaller table fragments.
+- **Resilient Scoring**: Collects numeric candidates and ranks them based on keyword proximity (Total, Chargeable), currency symbols (₹, Rs), footer position, and Indian currency formatting.
+- **Metadata Filtering**: Automatically disqualifies non-financial numbers like GSTINs, CINs, and zip codes during extraction.
+- **Greedy OCR Joining**: Intelligently merges fragmented OCR digits (e.g., `23 , 77 , 700`) into single valid numbers while protecting clean digital PDF columns.
 - **Smart Metadata**: Extracts cleaned Supplier and Company names, automatically stripping address noise (e.g., A-55, Sector 63) to ensure a professional dashboard view.
 
 ### 4. Key Features

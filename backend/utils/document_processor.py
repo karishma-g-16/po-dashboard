@@ -2,7 +2,13 @@ import os
 import logging
 import numpy as np
 from PIL import Image, ImageOps, ImageEnhance
+import PIL.Image
 import easyocr
+
+# Monkey-patch for easyocr compatibility with modern Pillow (10.0.0+)
+if not hasattr(PIL.Image, 'ANTIALIAS'):
+    PIL.Image.ANTIALIAS = PIL.Image.Resampling.LANCZOS
+
 from pdf2image import convert_from_path
 from PyPDF2 import PdfReader
 import pandas as pd
@@ -45,10 +51,12 @@ def extract_text_from_file(file_path: str) -> str:
                         # Preprocess each page image
                         processed_img = preprocess_image(image)
                         img_np = np.array(processed_img)
-                        # Use paragraph=True to help join related text blocks (like digits)
-                        result = reader.readtext(img_np, detail=0, paragraph=True)
-                        # Mark OCR text with a special prefix for the extractor
-                        text += "[OCR] " + " ".join(result) + " "
+                        # Use default grouping (no paragraph) for more granular control
+                        result = reader.readtext(img_np, detail=0)
+                        # Mark OCR text and strip common table artifacts
+                        ocr_raw = " ".join(result)
+                        ocr_clean = ocr_raw.replace('|', ' ').replace('!', ' ').replace('[', ' ').replace(']', ' ')
+                        text += "[OCR] " + ocr_clean + " "
                 else:
                     logger.error("EasyOCR reader not initialized")
         
@@ -60,10 +68,11 @@ def extract_text_from_file(file_path: str) -> str:
                 
                 # 2. Extract RAW text using EasyOCR
                 img_np = np.array(processed_img)
-                # Use paragraph=True to help join related text blocks
-                result = reader.readtext(img_np, detail=0, paragraph=True)
-                # Mark OCR text with a special prefix
-                text = "[OCR] " + " ".join(result)
+                result = reader.readtext(img_np, detail=0)
+                # Mark OCR text and strip table artifacts
+                ocr_raw = " ".join(result)
+                ocr_clean = ocr_raw.replace('|', ' ').replace('!', ' ').replace('[', ' ').replace(']', ' ')
+                text = "[OCR] " + ocr_clean
                 
                 # 3. Handle common OCR artifacts (Shared with PDF logic)
                 text = text.replace('\ufffd', '₹').replace('ī', '₹').replace('?', '₹')
@@ -90,12 +99,18 @@ def extract_text_from_file(file_path: str) -> str:
 def preprocess_image(img: Image.Image) -> Image.Image:
     """
     Advanced image preprocessing for high-accuracy OCR on screenshots and photos.
+    Optimized for SPEED: Resizes to 1600px, heavily reducing CPU load while maintaining accuracy.
     Includes autocontrast for uneven lighting and optimized sharpening.
     """
-    # 1. Resize for OCR (2200px width is sweet spot for EasyOCR)
+    # 1. Resize for OCR (1600px width is optimal for speed vs accuracy balance)
     width, height = img.size
-    target_width = 2200
-    if width < target_width:
+    target_width = 1600
+    if width > target_width:
+        # Scale DOWN if too large (saves massive processing time)
+        scale = target_width / width
+        img = img.resize((int(width * scale), int(height * scale)), Image.Resampling.LANCZOS)
+    elif width < target_width:
+        # Scale UP if too small
         scale = target_width / width
         img = img.resize((int(width * scale), int(height * scale)), Image.Resampling.LANCZOS)
     

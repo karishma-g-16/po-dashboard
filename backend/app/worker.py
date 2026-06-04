@@ -65,6 +65,7 @@ def process_invoice_task(po_id: str):
         po.vendor_name = parsed.get("vendor_name", "Unknown Vendor")
         po.order_tracking = parsed.get("order_tracking", f"TRK-{str(po_id)[:8].upper()}")
         po.credit_days = parsed.get("credit_days", 30)
+        po.ordered_quantity = parsed.get("ordered_quantity", 0)
         
         po.status = "COMPLETED"
         db.commit()

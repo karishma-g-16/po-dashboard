@@ -68,20 +68,25 @@ def extract_smart_data(text: str) -> dict:
     company = "Not found"
     supplier = "Not found"
     
-    # Company (Buyer)
-    company_patterns = [
-        r'(?:INVOICE TO|Bill To|Ship To|Customer|Buyer|Ship to|Invoice\s*[:\s]*To)[\s\(\):-]*?([A-Z][A-Za-z0-9\s&,.-]{3,})',
-        r'(?:Go IP Global Services|GO IP)[\s\(\):-]*?([A-Z0-9\s&,.-]*)'
-    ]
-    for p in company_patterns:
-        match = re.search(p, clean_text, re.IGNORECASE)
-        if match:
-            val = match.group(1).strip()
-            # Stop if we hit noise or address markers
-            val = re.split(r'(?i)dated|invoice|voucher|mode|terms|consignee', val)[0].strip()
-            if not any(x in val.lower() for x in ['invoice', 'bill to', 'ship to']):
-                company = clean_entity_name(val)
-                if len(company) > 3: break
+    # Check for hardcoded known companies first if they appear at the start of address blocks
+    if re.search(r'Go IP Global Services', clean_text, re.IGNORECASE):
+        company = "Go IP Global Services Pvt. Ltd."
+    elif re.search(r'GO IP', clean_text, re.IGNORECASE):
+        company = "Go IP Global Services Pvt. Ltd."
+    else:
+        # Company (Buyer)
+        company_patterns = [
+            r'(?:INVOICE TO|Bill To|Ship To|Customer|Buyer|Ship to|Invoice\s*[:\s]*To)[\s\(\):-]*?([A-Z][A-Za-z0-9\s&,.-]{3,})'
+        ]
+        for p in company_patterns:
+            match = re.search(p, clean_text, re.IGNORECASE)
+            if match:
+                val = match.group(1).strip()
+                # Stop if we hit noise or address markers
+                val = re.split(r'(?i)dated|invoice|voucher|mode|terms|consignee', val)[0].strip()
+                if not any(x in val.lower() for x in ['invoice', 'bill to', 'ship to']):
+                    company = clean_entity_name(val)
+                    if len(company) > 3: break
 
     # Supplier (Seller)
     supplier_patterns = [
@@ -122,10 +127,57 @@ def extract_smart_data(text: str) -> dict:
             if len(candidate) > 2:
                 tracking = candidate
                 break
+
+    ordered_quantity = 0
+    # 1. First Pass: Try to find numbers followed strictly by units
+    qty_matches = re.finditer(r'\b([0-9]{1,3}(?:[,\s]?[0-9]{3})*)\s*(?:pcs|nos|qty|items|pce)\b', clean_text, re.IGNORECASE)
     
+    qty_vals = []
+    for match in qty_matches:
+        val_str = re.sub(r'[\s,]', '', match.group(1))
+        try:
+            val = int(val_str)
+            if val > 0: qty_vals.append(val)
+        except ValueError:
+            pass
+            
+    # 2. Aggressive Fallback: Look for the specific "Total X pcs" structure
+    # This handles extreme OCR noise where spaces/characters separate the number from the unit
+    if not qty_vals:
+        logger.info("Applying aggressive fallback for ordered_quantity extraction")
+        # Pattern looks for "Total", then any junk/numbers, then "pcs"
+        fallback_match = re.search(r'Total[\s\S]{0,30}?([0-9][0-9\s,]*[0-9])[\s\S]{0,10}?(?:pcs|nos)', clean_text, re.IGNORECASE)
+        if fallback_match:
+            raw_num = fallback_match.group(1)
+            clean_num = re.sub(r'[^0-9]', '', raw_num)
+            try:
+                if clean_num:
+                    qty_vals.append(int(clean_num))
+            except ValueError:
+                pass
+
+    # 3. Keyword-Based Extraction (For documents where units are missing)
+    if not qty_vals:
+        logger.info("Applying keyword-based fallback for ordered_quantity extraction")
+        kw_matches = re.finditer(r'(?:Total Quantity|Ordered Quantity|Order Qty|Quantity|Qty)[\s:-]+([0-9]{1,3}(?:[,\s]?[0-9]{3})*)', clean_text, re.IGNORECASE)
+        for match in kw_matches:
+            clean_num = re.sub(r'[^0-9]', '', match.group(1))
+            try:
+                if clean_num:
+                    qty_vals.append(int(clean_num))
+            except ValueError:
+                pass
+
+    if qty_vals:
+        # Prevent picking up GSTINs or huge artifact numbers
+        valid_qtys = [q for q in qty_vals if q < 10000000]
+        if valid_qtys:
+            ordered_quantity = max(valid_qtys)
+
     return {
         'company_name': company,
         'vendor_name': supplier, # Keep key as vendor_name for DB compatibility but it contains supplier
         'credit_days': days,
-        'order_tracking': tracking
+        'order_tracking': tracking,
+        'ordered_quantity': ordered_quantity
     }

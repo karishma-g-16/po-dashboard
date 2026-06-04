@@ -43,6 +43,8 @@ class PurchaseOrder(Base):
     base_amount = Column(Numeric(12, 2))
     four_percent_amount = Column(Numeric(12, 2))
     
+    ordered_quantity = Column(Integer, default=0)
+    
     file_path = Column(String(500))
     file_type = Column(String(50))
     status = Column(String(50), default="PROCESSING") # PROCESSING, COMPLETED, FAILED

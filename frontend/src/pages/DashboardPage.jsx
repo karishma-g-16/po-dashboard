@@ -4,6 +4,7 @@ import { poApi } from '../api';
 import UploadForm from '../components/UploadForm';
 import POTable from '../components/POTable';
 import DocumentViewerModal from '../components/DocumentViewerModal';
+import PurchaseOrdersView from '../components/PurchaseOrdersView';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -13,6 +14,8 @@ const DashboardPage = ({ user }) => {
   const [showUpload, setShowUpload] = useState(false);
   const [selectedViewPo, setSelectedViewPo] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [feePercentage, setFeePercentage] = useState(4);
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const fetchPos = async (search = '') => {
     setIsLoading(true);
@@ -103,10 +106,12 @@ const DashboardPage = ({ user }) => {
       
       const formatCurrency = (amt) => `Rs. ${Number(amt || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
       
+      const dynamicFee = po.base_amount * (feePercentage / 100);
+
       const tableData = [
         ['Base Amount (Excl. GST)', formatCurrency(po.base_amount)],
         ['GST (18%)', formatCurrency(po.gst_amount)],
-        ['4% Amount', formatCurrency(po.four_percent_amount)],
+        [`Fee (${feePercentage}%)`, formatCurrency(dynamicFee)],
         ['GRAND TOTAL (Incl. GST)', formatCurrency(po.total_amount)]
       ];
 
@@ -139,6 +144,8 @@ const DashboardPage = ({ user }) => {
 
   const totalAmount = pos.reduce((acc, po) => acc + Number(po.total_amount || 0), 0);
   const totalGst = pos.reduce((acc, po) => acc + Number(po.gst_amount || 0), 0);
+  const totalPcs = pos.reduce((acc, po) => acc + Number(po.ordered_quantity || 0), 0);
+  const totalFee = pos.reduce((acc, po) => acc + (Number(po.base_amount || 0) * (feePercentage / 100)), 0);
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -149,14 +156,20 @@ const DashboardPage = ({ user }) => {
         </div>
         
         <nav className="flex-1 px-4 space-y-2">
-          <a href="#" className="flex items-center space-x-3 bg-white/10 p-3 rounded-lg transition-all">
-            <LayoutDashboard className="w-5 h-5 text-indigo-400" />
+          <button 
+            onClick={() => setActiveTab('dashboard')}
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-all ${activeTab === 'dashboard' ? 'bg-white/10 text-indigo-400' : 'hover:bg-white/5 text-slate-300'}`}
+          >
+            <LayoutDashboard className="w-5 h-5" />
             <span className="font-medium">Dashboard</span>
-          </a>
-          <a href="#" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-white/5 transition-all text-slate-300">
+          </button>
+          <button 
+            onClick={() => setActiveTab('purchase_orders')}
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-all ${activeTab === 'purchase_orders' ? 'bg-white/10 text-indigo-400' : 'hover:bg-white/5 text-slate-300'}`}
+          >
             <FileText className="w-5 h-5" />
-            <span>Purchase Orders</span>
-          </a>
+            <span className="font-medium">Purchase Orders</span>
+          </button>
           <a href="#" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-white/5 transition-all text-slate-300">
             <Settings className="w-5 h-5" />
             <span>Settings</span>
@@ -198,6 +211,18 @@ const DashboardPage = ({ user }) => {
           </div>
           
           <div className="flex items-center space-x-4">
+            <div className="flex items-center bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+              <label htmlFor="feeSelector" className="text-xs font-bold text-slate-500 mr-2 uppercase tracking-wider">Fee:</label>
+              <select 
+                id="feeSelector"
+                value={feePercentage} 
+                onChange={(e) => setFeePercentage(Number(e.target.value))}
+                className="bg-transparent text-sm font-bold text-indigo-600 focus:outline-none cursor-pointer"
+              >
+                <option value={4}>4.0%</option>
+                <option value={3.5}>3.5%</option>
+              </select>
+            </div>
             <button onClick={() => fetchPos(searchTerm)} className="p-2 text-slate-400 hover:text-slate-600 transition-all">
               <RefreshCcw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
@@ -214,58 +239,72 @@ const DashboardPage = ({ user }) => {
           </div>
         </header>
 
-        <div className="p-6 lg:p-8 space-y-6">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">Dashboard Overview</h2>
-            <p className="text-slate-500 text-sm">Welcome back, {user?.first_name}.</p>
-          </div>
-
-          {/* Stats Grid - Fixed wrap issue */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            {[
-              { label: 'Total Invoices', value: pos.length, detail: 'Lifetime uploads' },
-              { label: 'Total Amount', value: `₹${totalAmount.toLocaleString('en-IN')}`, detail: 'Incl. GST' },
-              { label: 'Pending Process', value: pos.filter(p => p.status === 'PROCESSING').length, detail: 'In queue' },
-              { label: 'GST Total', value: `₹${totalGst.toLocaleString('en-IN')}`, detail: '18% Component' },
-            ].map((stat, i) => (
-              <div key={i} className="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                <p className="text-2xl font-bold text-slate-900 mt-1">{stat.value}</p>
-                <p className="text-[10px] text-slate-400 mt-1 font-medium italic">{stat.detail}</p>
+        <div className="p-6 lg:p-8 space-y-6 overflow-y-auto">
+          {activeTab === 'dashboard' ? (
+            <>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">Dashboard Overview</h2>
+                <p className="text-slate-500 text-sm">Welcome back, {user?.first_name}.</p>
               </div>
-            ))}
-          </div>
 
-          {/* Table Container */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-bold text-slate-900">Recent Purchase Orders</h3>
-              <div className="flex items-center space-x-4">
-                <button onClick={() => poApi.exportCsv()} className="text-xs font-bold text-indigo-600 hover:underline">CSV</button>
-                <button onClick={() => poApi.exportExcel()} className="text-xs font-bold text-indigo-600 hover:underline">Excel</button>
-                <span className="text-slate-300">|</span>
-                <button className="text-xs font-bold text-slate-500 hover:text-slate-700">View all</button>
+              {/* Stats Grid - Fixed wrap issue */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+                {[
+                  { label: 'Total Invoices', value: pos.length, detail: searchTerm ? 'Filtered records' : 'Lifetime uploads' },
+                  { label: 'Total PCS', value: totalPcs.toLocaleString('en-IN'), detail: 'Ordered Quantity' },
+                  { label: `Total ${feePercentage}% Amount`, value: `₹${totalFee.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, detail: 'Fee Calculation', color: 'text-indigo-600' },
+                  { label: 'GST Total', value: `₹${totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, detail: '18% Component' },
+                  { label: 'Total Amount', value: `₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, detail: 'Incl. GST' },
+                ].map((stat, i) => (
+                  <div key={i} className="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                    <p className={`text-2xl font-bold mt-1 ${stat.color || 'text-slate-900'}`}>{stat.value}</p>
+                    <p className="text-[10px] text-slate-400 mt-1 font-medium italic">{stat.detail}</p>
+                  </div>
+                ))}
               </div>
-            </div>
-            
-            <div className="p-0 overflow-x-auto">
-                {pos.length > 0 ? (
-                <POTable 
-                    pos={pos} 
-                    onDelete={handleDelete} 
-                    onView={(po) => setSelectedViewPo(po)}
-                    onDownload={(po) => handleDownload(po)}
-                    userRole={user?.role}
-                />
-                ) : (
-                <div className="p-20 text-center text-slate-400">
-                    <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                    <p className="font-medium text-slate-500">No invoices found yet</p>
-                    <button onClick={() => setShowUpload(true)} className="mt-2 text-indigo-600 font-bold hover:underline">Upload your first PO</button>
+
+              {/* Table Container */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                  <h3 className="font-bold text-slate-900">Recent Purchase Orders</h3>
+                  <div className="flex items-center space-x-4">
+                    <button onClick={() => poApi.exportCsv()} className="text-xs font-bold text-indigo-600 hover:underline">CSV</button>
+                    <button onClick={() => poApi.exportExcel()} className="text-xs font-bold text-indigo-600 hover:underline">Excel</button>
+                    <span className="text-slate-300">|</span>
+                    <button className="text-xs font-bold text-slate-500 hover:text-slate-700">View all</button>
+                  </div>
                 </div>
-                )}
-            </div>
-          </div>
+                
+                <div className="p-0 overflow-x-auto">
+                    {pos.length > 0 ? (
+                    <POTable 
+                        pos={pos} 
+                        onDelete={handleDelete} 
+                        onView={(po) => setSelectedViewPo(po)}
+                        onDownload={(po) => handleDownload(po)}
+                        userRole={user?.role}
+                        feePercentage={feePercentage}
+                    />
+                    ) : searchTerm ? (
+                    <div className="p-20 text-center text-slate-400">
+                        <Search className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                        <p className="font-medium text-slate-500">No records found for "{searchTerm}"</p>
+                        <button onClick={() => setSearchTerm('')} className="mt-2 text-indigo-600 font-bold hover:underline">Clear search</button>
+                    </div>
+                    ) : (
+                    <div className="p-20 text-center text-slate-400">
+                        <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                        <p className="font-medium text-slate-500">No invoices found yet</p>
+                        <button onClick={() => setShowUpload(true)} className="mt-2 text-indigo-600 font-bold hover:underline">Upload your first PO</button>
+                    </div>
+                    )}
+                </div>
+              </div>
+            </>
+          ) : (
+            <PurchaseOrdersView pos={pos} />
+          )}
         </div>
       </main>
 

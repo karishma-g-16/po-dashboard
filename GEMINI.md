@@ -52,7 +52,7 @@ uvicorn backend.main:app --reload
 backend\venv\Scripts\activate.bat
 
 # Run Server
-uvicorn backend.main:app --reload
+cd frontend
 ```
 
 *Note: Ensure PostgreSQL is running and the `podashboard` database exists.*

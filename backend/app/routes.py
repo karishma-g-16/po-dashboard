@@ -1,31 +1,25 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
-from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, BackgroundTasks
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse, RedirectResponse
 import io
 from sqlalchemy.orm import Session
 import os
 import uuid
 import logging
-import re
+import pandas as pd
 
 from backend.database.db import get_db
 from backend.database.models import PurchaseOrder
 from backend.app.auth import get_current_user
 
-from backend.utils.document_processor import extract_text_from_file
-from backend.utils.extraction import extract_smart_data
-from backend.utils.gst_calc import calculate_gst
-from backend.utils.amount_extractor import AmountExtractor
+from backend.utils.storage import storage_manager
+from backend.app.tasks import process_po_background
 
 router = APIRouter(prefix="/api/po", tags=["po"])
 logger = logging.getLogger(__name__)
 
-# Ensure uploads folder exists
+# Ensure uploads folder exists (fallback)
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-def extract_data_from_text(text: str) -> dict:
-    """Extract data using the shared robust utility"""
-    return extract_smart_data(text)
 
 @router.get("/file/{po_id}")
 async def get_po_file(
@@ -33,19 +27,22 @@ async def get_po_file(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """Serve the actual PO file"""
+    """Serve the actual PO file (local or cloud)"""
     try:
         po_uuid = uuid.UUID(po_id)
-        po = db.query(PurchaseOrder).filter(
-            PurchaseOrder.id == po_uuid,
-            PurchaseOrder.user_id == current_user['id']
-        ).first()
+        po = db.query(PurchaseOrder).filter(PurchaseOrder.id == po_uuid).first()
         
         if not po:
             raise HTTPException(status_code=404, detail="PO not found")
             
+        # Try Supabase first
+        public_url = storage_manager.get_public_url(po.file_path)
+        if public_url:
+            return RedirectResponse(public_url)
+            
+        # Fallback to local
         if not os.path.exists(po.file_path):
-            raise HTTPException(status_code=404, detail="File not found on server")
+            raise HTTPException(status_code=404, detail="File not found")
             
         return FileResponse(po.file_path)
     except Exception as e:
@@ -58,27 +55,22 @@ async def delete_po(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """Delete a PO - Public Access (Restored)"""
+    """Delete a PO"""
     try:
-        # Cast string po_id to UUID
-        import uuid
         po_uuid = uuid.UUID(po_id)
-        
-        # Find the PO
         po = db.query(PurchaseOrder).filter(PurchaseOrder.id == po_uuid).first()
         
         if not po:
-            return JSONResponse(
-                status_code=404,
-                content={"success": False, "error": "PO not found"}
-            )
+            return JSONResponse(status_code=404, content={"success": False, "error": "PO not found"})
             
-        # Delete file if exists
+        # Delete from local if exists
         if os.path.exists(po.file_path):
             try:
                 os.remove(po.file_path)
             except:
                 pass
+        
+        # Note: Supabase deletion can be added here if needed
             
         db.delete(po)
         db.commit()
@@ -86,113 +78,79 @@ async def delete_po(
         return {"success": True, "message": "PO deleted successfully"}
     except Exception as e:
         logger.error(f"Delete error: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"success": False, "error": str(e)}
-        )
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
 @router.post("/upload")
 async def upload_file(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """Upload invoice and extract data"""
+    """Upload invoice and trigger background processing"""
     
     try:
-        # Validate file
         if not file or not file.filename:
-            return JSONResponse(
-                status_code=400,
-                content={"success": False, "error": "No file provided"}
-            )
+            return JSONResponse(status_code=400, content={"success": False, "error": "No file provided"})
         
-        # Get file extension
         file_ext = file.filename.split('.')[-1].lower()
         allowed = ['pdf', 'xlsx', 'xls', 'csv', 'txt', 'png', 'jpg', 'jpeg']
         
         if file_ext not in allowed:
-            return JSONResponse(
-                status_code=400,
-                content={"success": False, "error": f"File type not allowed. Allowed: {allowed}"}
-            )
+            return JSONResponse(status_code=400, content={"success": False, "error": f"File type not allowed."})
         
-        # Save file
         file_id = str(uuid.uuid4())
-        file_path = os.path.join(UPLOAD_DIR, f"{file_id}.{file_ext}")
-        
+        file_name = f"{file_id}.{file_ext}"
         file_content = await file.read()
-        with open(file_path, "wb") as f:
-            f.write(file_content)
         
-        logger.info(f"File saved: {file_path}")
+        # 1. Save to Cloud (Supabase) if configured
+        storage_path = file_name
+        success = await storage_manager.upload_content(file_content, file_name, file.content_type)
         
-        # Extract text
-        extracted_text = extract_text_from_file(file_path)
+        # 2. Fallback to Local if cloud fails or not configured
+        if not success:
+            logger.warning("Cloud upload failed or skipped, saving locally.")
+            local_path = os.path.join(UPLOAD_DIR, file_name)
+            with open(local_path, "wb") as f:
+                f.write(file_content)
+            storage_path = local_path
         
-        logger.info(f"Text extracted: {len(extracted_text)} chars")
-        
-        # Extract data
-        data = extract_data_from_text(extracted_text)
-        
-        # 1. Find TOTAL amount using targeted extractor
-        total_amount = AmountExtractor.find_total_amount(extracted_text)
-        
-        if total_amount == 0:
-            logger.warning("Targeted extraction failed. Using fallback amount 11800.")
-            total_amount = 11800.0
-            data['company_name'] = data['company_name'] if data['company_name'] != "Not found" else "Extracted Company"
-            data['vendor_name'] = data['vendor_name'] if data['vendor_name'] != "Not found" else "Extracted Vendor"
-        
-        # Calculate GST
-        gst_data = calculate_gst(total_amount)
-        
-        # Save to database
+        # 3. Create PO entry with PROCESSING status
         po = PurchaseOrder(
+            id=uuid.UUID(file_id),
             user_id=current_user['id'],
-            company_name=data['company_name'],
-            vendor_name=data['vendor_name'],
-            total_amount=gst_data['gross_amount'],
-            base_amount=gst_data['actual_amount'],
-            gst_amount=gst_data['gst_amount'],
-            four_percent_amount=gst_data['four_percent_amount'],
-            credit_days=data['credit_days'],
-            order_tracking=data['order_tracking'],
-            ordered_quantity=data.get('ordered_quantity', 0),
-            file_path=file_path,
+            file_path=storage_path,
             file_type=file_ext,
-            status='Completed',
-            uploaded_by=current_user['email']
+            status='PROCESSING',
+            uploaded_by=current_user['email'],
+            company_name="Processing...",
+            vendor_name="Pending...",
+            total_amount=0,
+            base_amount=0,
+            gst_amount=0,
+            four_percent_amount=0
         )
         
         db.add(po)
         db.commit()
         db.refresh(po)
         
-        logger.info(f"PO saved: {po.id}")
+        # 4. Trigger Background Processing
+        background_tasks.add_task(process_po_background, str(po.id))
         
         return JSONResponse(
-            status_code=200,
+            status_code=202,
             content={
                 "success": True,
                 "po_id": str(po.id),
-                "extracted_data": data,
-                "gst_data": {
-                    "total_amount": gst_data['gross_amount'],
-                    "base_amount": gst_data['actual_amount'],
-                    "gst_amount": gst_data['gst_amount'],
-                    "four_percent_amount": gst_data['four_percent_amount']
-                },
-                "status": "Completed"
+                "message": "File uploaded and processing started.",
+                "status": "PROCESSING"
             }
         )
     
     except Exception as e:
         logger.error(f"Upload failed: {str(e)}", exc_info=True)
-        return JSONResponse(
-            status_code=500,
-            content={"success": False, "error": f"Upload failed: {str(e)}"}
-        )
+        return JSONResponse(status_code=500, content={"success": False, "error": f"Upload failed: {str(e)}"})
 
 @router.get("/export/csv")
 async def export_csv(

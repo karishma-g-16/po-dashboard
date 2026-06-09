@@ -30,12 +30,17 @@ class AmountExtractor:
         """
         High-Precision Extraction logic for both Digital PDFs and OCR images.
         """
-        logger.info(f"Targeting extraction (text len: {len(text)})")
+        logger.info(f"--- STARTING EXTRACTION ---")
+        logger.info(f"Input text length: {len(text)}")
+        if len(text) < 100:
+            logger.warning(f"EXTRACTED TEXT IS TOO SHORT: '{text}'")
         
-        # Normalize text: Handle common PDF/OCR noise
+        # Normalize text
         clean_text = text.replace('\ufffd', '₹').replace('?', '₹').replace('ī', '₹')
-        # Replace multiple spaces/newlines with single space
         clean_text = re.sub(r'\s+', ' ', clean_text)
+        
+        # Log first 500 chars of cleaned text for debugging
+        logger.info(f"Cleaned Text Preview: {clean_text[:500]}...")
         
         # 1. Detect Magnitude from Words (e.g., "Two Lakhs...")
         words_mag = 0
@@ -81,6 +86,10 @@ class AmountExtractor:
                 'NET PAYABLE', 'NET AMOUNT', 'FINAL AMOUNT', 'BALANCE DUE',
                 'INVOICE TOTAL', 'VOUCHER TOTAL', 'AMOUNT PAYABLE'
             ]
+            
+            # Log the context for debugging
+            logger.info(f"Candidate: {val} | Raw: '{val_str}' | Context: '{context_before[-50:]}'")
+            
             for kw in total_keywords:
                 if kw in context_before:
                     score += 300

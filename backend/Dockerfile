@@ -5,6 +5,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     libtesseract-dev \
+    poppler-utils \
     libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 

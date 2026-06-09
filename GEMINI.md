@@ -16,7 +16,7 @@ All calculations are derived from the **Total Amount (Inclusive of 18% GST)**:
 - **Backend**: FastAPI (Python) + SQLAlchemy ORM.
 - **Frontend**: React (Vite) + Tailwind CSS + Lucide Icons.
 - **Unified Processing**: Centralized extraction in `backend/utils/document_processor.py` handling all file types.
-- **OCR Engine**: **EasyOCR** with advanced image preprocessing (2200px Resizing + Autocontrast + Sharpening) for high accuracy on screenshots and photos.
+- **OCR Engine**: **Tesseract OCR** (via `pytesseract`) with advanced image preprocessing (2000px Resizing + Autocontrast + Sharpening). Switched from EasyOCR to ensure compatibility with Render's 512MB RAM limit.
 - **Database**: PostgreSQL.
 
 ### 3. OCR & Extraction Logic (High Precision)

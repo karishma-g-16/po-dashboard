@@ -49,7 +49,8 @@ app.add_middleware(
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
         "https://*.vercel.app",
-        "https://po-dashboard-frontend.vercel.app" # Example specific URL
+        "https://po-dashboard-frontend.vercel.app",
+        "https://po-dashboard-frontend-gamma.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],

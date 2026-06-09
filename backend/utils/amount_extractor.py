@@ -75,21 +75,27 @@ class AmountExtractor:
                 if val >= words_mag: score += 500
                 elif val < words_mag / 20: score -= 300
 
-            # Proximity to Total Keywords
-            context_before = clean_text[max(0, match.start()-150):match.start()].upper()
-            if 'GRAND TOTAL' in context_before: score += 400
-            elif 'TOTAL' in context_before: score += 200
-            elif 'CHARGEABLE' in context_before: score += 200
-            elif 'NET AMOUNT' in context_before: score += 150
+            # Proximity to Total Keywords (Universal List)
+            total_keywords = [
+                'GRAND TOTAL', 'TOTAL AMOUNT', 'TOTAL', 'CHARGEABLE', 
+                'NET PAYABLE', 'NET AMOUNT', 'FINAL AMOUNT', 'BALANCE DUE',
+                'INVOICE TOTAL', 'VOUCHER TOTAL', 'AMOUNT PAYABLE'
+            ]
+            for kw in total_keywords:
+                if kw in context_before:
+                    score += 300
+                    if 'GRAND' in kw or 'INVOICE' in kw: score += 100
+                    break
             
-            # Penalize Tax Components (they are smaller than total)
-            if any(tk in context_before for tk in ['SGST', 'CGST', 'IGST', 'GST']):
-                score -= 100
+            # Currency symbol bonus (covers OCR artifacts like ī, ?, etc)
+            if any(sym in val_str or sym in clean_text[max(0, match.start()-10):match.start()] for sym in ['₹', 'ī', 'Rs', 'INR', '$']):
+                score += 200
 
-            # Position in document (Totals are usually at the end)
+            # Position in document: Totals are almost ALWAYS at the very end.
+            # This is crucial for documents like PO-0044 where sub-totals exist.
             pos_ratio = match.start() / len(clean_text)
-            if pos_ratio > 0.7: score += 100
-            
+            if pos_ratio > 0.85: score += 300 # Heavy boost for bottom values
+            elif pos_ratio > 0.7: score += 150
             candidates.append({'value': val, 'score': score, 'raw': val_str})
 
         if not candidates: return 0.0

@@ -28,27 +28,18 @@ class AmountExtractor:
     @staticmethod
     def find_total_amount(text: str) -> float:
         """
-        Final High-Precision Extraction logic specifically tuned for Screenshot 1.
-        Uses greedy number joining and strict keyword-word anchoring.
+        High-Precision Extraction logic for both Digital PDFs and OCR images.
         """
-        logger.info(f"Final targeting extraction (text len: {len(text)})")
+        logger.info(f"Targeting extraction (text len: {len(text)})")
         
-        # 1. Aggressive OCR Text Normalization
-        # We need to be very aggressive to ensure "23,77,700.00" is seen as ONE number
-        is_ocr = "[OCR]" in text
-        clean_text = text
-        if is_ocr:
-            # Join digits separated by spaces OR dots/commas surrounded by spaces
-            # "700 . 00" -> "700.00", "77 , 700" -> "77,700"
-            clean_text = re.sub(r'(\d)\s+([\.,])\s+(\d)', r'\1\2\3', clean_text)
-            # Join digits with single spaces: "23 77 700" -> "2377700"
-            clean_text = re.sub(r'(\d)\s(\d)', r'\1\2', clean_text)
-            
-        clean_text = clean_text.replace('\ufffd', '₹').replace('?', '₹').replace('ī', '₹')
+        # Normalize text: Handle common PDF/OCR noise
+        clean_text = text.replace('\ufffd', '₹').replace('?', '₹').replace('ī', '₹')
+        # Replace multiple spaces/newlines with single space
+        clean_text = re.sub(r'\s+', ' ', clean_text)
         
-        # 1.1 Detect Magnitude from Words
+        # 1. Detect Magnitude from Words (e.g., "Two Lakhs...")
         words_mag = 0
-        words_match = re.search(r'(?:Words|Chargeable|INR)[\s\S]{0,150}?(?:Only)', clean_text, re.IGNORECASE)
+        words_match = re.search(r'(?:Words|Chargeable|INR|Total)[\s\S]{0,250}?(?:Only)', clean_text, re.IGNORECASE)
         if words_match:
             wt = words_match.group(0).lower()
             if 'crore' in wt: words_mag = 10000000
@@ -57,48 +48,47 @@ class AmountExtractor:
             logger.info(f"Word Anchor Magnitude: {words_mag}")
 
         # 2. Identify Potential Candidates
-        # Pattern designed to capture "₹ 23,77,700.00" as a whole
-        pattern = r'(?:[₹Rs\?\$]\s*)?([0-9][0-9\s,\.]{1,30}[0-9])'
+        # Pattern designed to capture "₹ 23,77,700.00" or "2377700.00"
+        pattern = r'(?:[₹Rs\?\$]\s*)?([0-9][0-9\s,\.]{1,25}[0-9])'
         matches = list(re.finditer(pattern, clean_text))
         
         candidates = []
         for match in matches:
             val_str = match.group(0).strip()
-            # DISQUALIFY obvious metadata: CINs (12+ digits), GSTINs (15 digits), Zip codes (6 digits no decimal)
+            # DISQUALIFY metadata: CINs (21 chars), GSTINs (15 chars), Phone numbers (10 digits)
             raw_digits = re.sub(r'[^0-9]', '', val_str)
             if len(raw_digits) >= 11 and '.' not in val_str: continue 
-            if len(raw_digits) == 6 and '.' not in val_str: continue 
-
-            # BLOCK QUANTITIES
-            lookahead = clean_text[match.end():match.end()+20].lower()
-            if any(unit in lookahead for unit in ['pcs', 'nos', 'qty', 'quantity']): continue
+            if len(raw_digits) == 6 and '.' not in val_str: continue # Likely Zip
 
             val = AmountExtractor.parse_numeric(val_str)
-            if val < 20.0 or val > 99999999.0: continue
+            # Basic range check for a typical B2B PO
+            if val < 50.0 or val > 99999999.0: continue
                 
             score = 0
             
-            # Decimal bonus (Totals almost always have decimals)
-            has_decimal = bool(re.search(r'[\.,]\d{2}\b', val_str))
-            if has_decimal: score += 150
-            
-            # Word-Magnitude Bonus (The most important rule for Lakhs)
-            if words_mag > 0:
-                if val >= words_mag: score += 300
-                elif val < words_mag / 10: score -= 200
-
-            # Proximity to "Total" or "Chargeable"
-            context_before = clean_text[max(0, match.start()-200):match.start()].upper()
-            if any(kw in context_before for kw in ['TOTAL', 'CHARGEABLE', 'PAYABLE', 'INR']):
+            # Decimal bonus
+            if '.' in val_str and len(val_str.split('.')[-1]) == 2:
                 score += 150
             
-            # Penalize Line-Item Taxes (SGST/CGST usually come right before Total)
-            if any(tk in context_before for tk in ['SGST', 'CGST', 'TAX', 'INPUT_']):
+            # Word-Magnitude Bonus (Strongest indicator)
+            if words_mag > 0:
+                if val >= words_mag: score += 500
+                elif val < words_mag / 20: score -= 300
+
+            # Proximity to Total Keywords
+            context_before = clean_text[max(0, match.start()-150):match.start()].upper()
+            if 'GRAND TOTAL' in context_before: score += 400
+            elif 'TOTAL' in context_before: score += 200
+            elif 'CHARGEABLE' in context_before: score += 200
+            elif 'NET AMOUNT' in context_before: score += 150
+            
+            # Penalize Tax Components (they are smaller than total)
+            if any(tk in context_before for tk in ['SGST', 'CGST', 'IGST', 'GST']):
                 score -= 100
 
-            # Footer Bonus
+            # Position in document (Totals are usually at the end)
             pos_ratio = match.start() / len(clean_text)
-            if pos_ratio > 0.8: score += 100
+            if pos_ratio > 0.7: score += 100
             
             candidates.append({'value': val, 'score': score, 'raw': val_str})
 
@@ -107,7 +97,8 @@ class AmountExtractor:
         # Final Rank: Highest Score, then Highest Value
         candidates.sort(key=lambda x: (x['score'], x['value']), reverse=True)
         
-        for i, c in enumerate(candidates[:3]):
-            logger.info(f"Targeting C{i+1}: {c['value']} (Score: {c['score']}, Raw: '{c['raw']}')")
+        # Log top candidate for debugging
+        top = candidates[0]
+        logger.info(f"Top Candidate: {top['value']} (Score: {top['score']})")
 
-        return round(candidates[0]['value'], 2)
+        return round(top['value'], 2)

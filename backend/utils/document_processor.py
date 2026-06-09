@@ -84,23 +84,24 @@ def extract_text_from_file(file_path: str) -> str:
 def preprocess_image(img: Image.Image) -> Image.Image:
     """
     Advanced image preprocessing optimized for Tesseract OCR.
-    Resizes, converts to grayscale, and enhances contrast.
+    Includes adaptive thresholding for better text extraction from screenshots.
     """
-    # 1. Resize for OCR (2000px width is good for Tesseract)
+    # 1. Resize for OCR (2500px is better for Tesseract on small text)
     width, height = img.size
-    target_width = 2000
+    target_width = 2500
     if width != target_width:
         scale = target_width / width
         img = img.resize((int(width * scale), int(height * scale)), Image.Resampling.LANCZOS)
     
-    # 2. Handle lighting/exposure
-    img = ImageOps.autocontrast(img)
-    
-    # 3. Convert to Grayscale
+    # 2. Convert to Grayscale
     img = img.convert('L')
     
-    # 4. Enhance contrast and sharpness
-    img = ImageEnhance.Contrast(img).enhance(2.0)
-    img = ImageEnhance.Sharpness(img).enhance(1.5)
+    # 3. Enhance contrast significantly
+    img = ImageEnhance.Contrast(img).enhance(2.5)
+    img = ImageEnhance.Sharpness(img).enhance(2.0)
+    
+    # 4. Adaptive Thresholding (makes text pop out from background)
+    # This simulates a clean black-and-white scan
+    img = img.point(lambda p: p > 128 and 255)
     
     return img

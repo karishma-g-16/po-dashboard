@@ -3,7 +3,6 @@ import logging
 import numpy as np
 from PIL import Image, ImageOps, ImageEnhance
 import PIL.Image
-import easyocr
 
 # Monkey-patch for easyocr compatibility with modern Pillow (10.0.0+)
 if not hasattr(PIL.Image, 'ANTIALIAS'):
@@ -23,6 +22,7 @@ def get_reader():
     if _reader is None:
         logger.info("Initializing EasyOCR Reader for the first time...")
         try:
+            import easyocr
             # Use CPU by default for broader compatibility; set gpu=True if CUDA is available
             _reader = easyocr.Reader(['en'], gpu=False)
         except Exception as e:

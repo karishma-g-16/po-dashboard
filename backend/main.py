@@ -7,7 +7,9 @@ from dotenv import load_dotenv
 
 # Add the parent directory to sys.path to allow absolute imports from the 'backend' package
 # This is necessary for some deployment environments (like Render) that run from the backend folder.
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
 from backend.database.db import engine, Base
 from backend.app.routes import router as po_router
@@ -20,15 +22,23 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Create database tables on startup
+# Create database tables on startup (non-blocking)
 @app.on_event("startup")
 async def startup_event():
-    logging.info("Starting up and creating database tables...")
-    try:
-        Base.metadata.create_all(bind=engine)
-        logging.info("Database tables created/verified successfully.")
-    except Exception as e:
-        logging.error(f"Error creating database tables: {e}")
+    logging.info("FastAPI starting up...")
+    # Run DB creation in a separate thread to avoid blocking the port binding
+    import threading
+    def init_db():
+        logging.info("Background thread: Creating database tables...")
+        try:
+            Base.metadata.create_all(bind=engine)
+            logging.info("Background thread: Database tables created successfully.")
+        except Exception as e:
+            logging.error(f"Background thread error: {e}")
+    
+    thread = threading.Thread(target=init_db)
+    thread.start()
+    logging.info("FastAPI ready and port binding should be complete.")
 
 # CORS middleware
 app.add_middleware(

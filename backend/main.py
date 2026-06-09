@@ -15,13 +15,20 @@ from backend.app.auth_routes import router as auth_router
 
 load_dotenv()
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
-
 app = FastAPI(
     title="PO Dashboard API",
     version="1.0.0"
 )
+
+# Create database tables on startup
+@app.on_event("startup")
+async def startup_event():
+    logging.info("Starting up and creating database tables...")
+    try:
+        Base.metadata.create_all(bind=engine)
+        logging.info("Database tables created/verified successfully.")
+    except Exception as e:
+        logging.error(f"Error creating database tables: {e}")
 
 # CORS middleware
 app.add_middleware(

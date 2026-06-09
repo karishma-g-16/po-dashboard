@@ -15,13 +15,19 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-# Initialize EasyOCR Reader (loads once into memory)
-try:
-    # Use CPU by default for broader compatibility; set gpu=True if CUDA is available
-    reader = easyocr.Reader(['en'], gpu=False)
-except Exception as e:
-    logger.error(f"Failed to initialize EasyOCR: {e}")
-    reader = None
+# Initialize EasyOCR Reader Lazily (to prevent slow startup)
+_reader = None
+
+def get_reader():
+    global _reader
+    if _reader is None:
+        logger.info("Initializing EasyOCR Reader for the first time...")
+        try:
+            # Use CPU by default for broader compatibility; set gpu=True if CUDA is available
+            _reader = easyocr.Reader(['en'], gpu=False)
+        except Exception as e:
+            logger.error(f"Failed to initialize EasyOCR: {e}")
+    return _reader
 
 def extract_text_from_file(file_path: str) -> str:
     """
@@ -45,6 +51,7 @@ def extract_text_from_file(file_path: str) -> str:
             # 2. If no text (scanned PDF), use EasyOCR with enhancement
             if len(text.strip()) < 50:
                 logger.info("Scanned PDF detected. Using EasyOCR fallback.")
+                reader = get_reader()
                 if reader:
                     images = convert_from_path(file_path)
                     for image in images:
@@ -61,6 +68,7 @@ def extract_text_from_file(file_path: str) -> str:
                     logger.error("EasyOCR reader not initialized")
         
         elif ext in ['png', 'jpg', 'jpeg']:
+            reader = get_reader()
             if reader:
                 # 1. Open and Preprocess for high accuracy OCR
                 img = Image.open(file_path)

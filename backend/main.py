@@ -1,8 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
+import sys
 import logging
 from dotenv import load_dotenv
+
+# Add the parent directory to sys.path to allow absolute imports from the 'backend' package
+# This is necessary for some deployment environments (like Render) that run from the backend folder.
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.database.db import engine, Base
 from backend.app.routes import router as po_router

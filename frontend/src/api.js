@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+// The baseURL should be the root domain. 
+// All requests like '/auth/login' will be appended to this.
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://po-dashboard-vzl0.onrender.com/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://po-dashboard-vzl0.onrender.com',
 });
 
 // Attach Token
@@ -10,6 +12,12 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // Ensure every request starts with /api if it doesn't already
+  if (config.url && !config.url.startsWith('/api')) {
+    config.url = `/api${config.url.startsWith('/') ? '' : '/'}${config.url}`;
+  }
+  
   return config;
 });
 
@@ -35,7 +43,6 @@ export const poApi = {
   upload: async (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    // Boundary is automatically set by the browser
     const response = await api.post('/po/upload', formData);
     return response.data;
   },

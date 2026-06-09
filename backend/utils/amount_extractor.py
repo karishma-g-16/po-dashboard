@@ -79,6 +79,9 @@ class AmountExtractor:
             if words_mag > 0:
                 if val >= words_mag: score += 500
                 elif val < words_mag / 20: score -= 300
+                
+            # Define context_before BEFORE logging it
+            context_before = clean_text[max(0, match.start()-150):match.start()].upper()
 
             # Proximity to Total Keywords (Universal List)
             total_keywords = [

@@ -44,13 +44,17 @@ def extract_text_from_file(file_path: str) -> str:
             # 2. If no text (scanned PDF), use Tesseract fallback
             if len(text.strip()) < 50:
                 logger.info("Scanned PDF detected. Using Tesseract fallback.")
-                images = convert_from_path(file_path)
-                for image in images:
-                    # Preprocess each page image
-                    processed_img = preprocess_image(image)
-                    # Extract text using Tesseract
-                    ocr_text = pytesseract.image_to_string(processed_img)
-                    text += "[OCR] " + ocr_text + " "
+                try:
+                    images = convert_from_path(file_path)
+                    for image in images:
+                        # Preprocess each page image
+                        processed_img = preprocess_image(image)
+                        # Extract text using Tesseract
+                        ocr_text = pytesseract.image_to_string(processed_img)
+                        text += "[OCR] " + ocr_text + " "
+                except Exception as pdf_err:
+                    logger.error(f"PDF OCR conversion failed: {pdf_err}")
+                    text += "[OCR Failed] "
         
         elif ext in ['png', 'jpg', 'jpeg']:
             # 1. Open and Preprocess

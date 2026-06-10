@@ -59,7 +59,9 @@ async def delete_po(
     try:
         # Authorization Check: Only these two emails can delete
         authorized_emails = ["ng965118@gmail.com", "karishmagautam178@gmail.com"]
-        if current_user.get('email') not in authorized_emails:
+        current_email = (current_user.get('email') or "").lower().strip()
+        
+        if current_email not in [email.lower() for email in authorized_emails]:
             return JSONResponse(
                 status_code=403, 
                 content={"success": False, "error": "Unauthorized. Only specific admins can delete data."}

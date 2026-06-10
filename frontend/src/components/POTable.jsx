@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Eye, Trash2, Download, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 
 const POTable = ({ pos, onDelete, onView, onDownload, userEmail, feePercentage = 4 }) => {
@@ -9,7 +9,12 @@ const POTable = ({ pos, onDelete, onView, onDownload, userEmail, feePercentage =
     }).format(amount || 0);
   };
 
-  const isAuthorizedToDelete = ["ng965118@gmail.com", "karishmagautam178@gmail.com"].includes(userEmail);
+  const isAuthorizedToDelete = useMemo(() => {
+    const authorized = ["ng965118@gmail.com", "karishmagautam178@gmail.com"];
+    if (!userEmail) return false;
+    const cleanEmail = userEmail.trim().toLowerCase();
+    return authorized.some(email => email.toLowerCase() === cleanEmail);
+  }, [userEmail]);
 
   const getStatusBadge = (status) => {
     switch (status) {

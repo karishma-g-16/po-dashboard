@@ -9,8 +9,22 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/p
 engine = create_engine(DATABASE_URL)
 
 with engine.begin() as conn:
+    # Migration for users table
+    try:
+        conn.execute(text("ALTER TABLE users ADD COLUMN reset_code VARCHAR(10);"))
+        print("Successfully added reset_code column to users table.")
+    except Exception as e:
+        print("reset_code column might already exist:", str(e))
+
+    try:
+        conn.execute(text("ALTER TABLE users ADD COLUMN reset_code_expires TIMESTAMP WITH TIME ZONE;"))
+        print("Successfully added reset_code_expires column to users table.")
+    except Exception as e:
+        print("reset_code_expires column might already exist:", str(e))
+
+    # Existing migration for purchase_orders
     try:
         conn.execute(text("ALTER TABLE purchase_orders ADD COLUMN ordered_quantity INTEGER DEFAULT 0;"))
         print("Successfully added ordered_quantity column.")
     except Exception as e:
-        print("Column might already exist or error occurred:", str(e))
+        print("ordered_quantity column might already exist:", str(e))

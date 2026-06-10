@@ -1,13 +1,15 @@
 import React from 'react';
 import { Eye, Trash2, Download, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 
-const POTable = ({ pos, onDelete, onView, onDownload, userRole, feePercentage = 4 }) => {
+const POTable = ({ pos, onDelete, onView, onDownload, userEmail, feePercentage = 4 }) => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
     }).format(amount || 0);
   };
+
+  const isAuthorizedToDelete = ["ng965118@gmail.com", "krishmagautam178@gmail.com"].includes(userEmail);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -98,13 +100,15 @@ const POTable = ({ pos, onDelete, onView, onDownload, userRole, feePercentage = 
                   >
                     <Download className="w-4 h-4" />
                   </button>
-                  <button 
-                    onClick={() => onDelete(po.id)} 
-                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" 
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {isAuthorizedToDelete && (
+                    <button 
+                      onClick={() => onDelete(po.id)} 
+                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" 
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </td>
             </tr>

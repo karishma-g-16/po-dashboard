@@ -283,7 +283,7 @@ const DashboardPage = ({ user }) => {
                         onDelete={handleDelete} 
                         onView={(po) => setSelectedViewPo(po)}
                         onDownload={(po) => handleDownload(po)}
-                        userRole={user?.role}
+                        userEmail={user?.email}
                         feePercentage={feePercentage}
                     />
                     ) : searchTerm ? (

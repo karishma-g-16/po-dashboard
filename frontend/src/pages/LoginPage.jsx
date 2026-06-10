@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '../api';
 import { LogIn, Mail, Lock, Loader2 } from 'lucide-react';
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showForgotModal, setShowForgotModal] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -92,9 +94,13 @@ const LoginPage = () => {
                 <label className="ml-2 block text-sm text-slate-600">Remember me</label>
               </div>
               <div className="text-sm">
-                <a href="#" className="font-medium text-accent hover:text-opacity-80">
+                <button 
+                  type="button"
+                  onClick={() => setShowForgotModal(true)}
+                  className="font-medium text-accent hover:text-opacity-80"
+                >
                   Forgot password?
-                </a>
+                </button>
               </div>
             </div>
 
@@ -128,6 +134,10 @@ const LoginPage = () => {
           </div>
         </div>
       </div>
+
+      {showForgotModal && (
+        <ForgotPasswordModal onClose={() => setShowForgotModal(false)} />
+      )}
     </div>
   );
 };

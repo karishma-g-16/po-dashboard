@@ -15,6 +15,8 @@ class User(Base):
     last_name = Column(String(100))
     role = Column(String(50), default="user") # 'admin' or 'user'
     is_active = Column(Boolean, default=True)
+    reset_code = Column(String(10), nullable=True)
+    reset_code_expires = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Vendor(Base):

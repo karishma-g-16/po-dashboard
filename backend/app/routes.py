@@ -55,8 +55,16 @@ async def delete_po(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """Delete a PO"""
+    """Delete a PO - Restricted to specific admins"""
     try:
+        # Authorization Check: Only these two emails can delete
+        authorized_emails = ["ng965118@gmail.com", "krishmagautam178@gmail.com"]
+        if current_user.get('email') not in authorized_emails:
+            return JSONResponse(
+                status_code=403, 
+                content={"success": False, "error": "Unauthorized. Only specific admins can delete data."}
+            )
+
         po_uuid = uuid.UUID(po_id)
         po = db.query(PurchaseOrder).filter(PurchaseOrder.id == po_uuid).first()
         

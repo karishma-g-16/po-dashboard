@@ -14,6 +14,7 @@ if BASE_DIR not in sys.path:
 from backend.database.db import engine, Base
 from backend.app.routes import router as po_router
 from backend.app.auth_routes import router as auth_router
+from backend.migrate_db import run_migrations
 
 load_dotenv()
 
@@ -26,7 +27,15 @@ app = FastAPI(
 @app.on_event("startup")
 async def startup_event():
     logging.info("FastAPI starting up...")
-    # Run DB creation in a separate thread to avoid blocking the port binding
+    
+    # 1. Run migrations to add missing columns
+    try:
+        run_migrations()
+        logging.info("Migrations completed.")
+    except Exception as e:
+        logging.error(f"Migration error: {e}")
+
+    # 2. Run DB creation in a separate thread to avoid blocking the port binding
     import threading
     def init_db():
         logging.info("Background thread: Creating database tables...")

@@ -9,7 +9,7 @@ const POTable = ({ pos, onDelete, onView, onDownload, userEmail, feePercentage =
     }).format(amount || 0);
   };
 
-  const isAuthorizedToDelete = ["ng965118@gmail.com", "krishmagautam178@gmail.com"].includes(userEmail);
+  const isAuthorizedToDelete = ["ng965118@gmail.com", "karishmagautam178@gmail.com"].includes(userEmail);
 
   const getStatusBadge = (status) => {
     switch (status) {

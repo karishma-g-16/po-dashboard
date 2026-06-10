@@ -6,6 +6,7 @@ from backend.database.models import User
 from backend.app.schemas import UserCreate, UserResponse, Token
 from backend.auth.password import get_password_hash, verify_password
 from backend.auth.jwt_handler import create_access_token
+from backend.app.auth import get_current_user
 from datetime import datetime, timedelta
 import random
 import string

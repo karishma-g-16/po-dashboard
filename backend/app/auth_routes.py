@@ -7,7 +7,7 @@ from backend.app.schemas import UserCreate, UserResponse, Token
 from backend.auth.password import get_password_hash, verify_password
 from backend.auth.jwt_handler import create_access_token
 from backend.app.auth import get_current_user
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import random
 import string
 from backend.app.schemas import UserCreate, UserResponse, Token, ForgotPasswordRequest, VerifyCodeRequest, ResetPasswordRequest
@@ -51,7 +51,7 @@ def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
 
     code = generate_reset_code()
     user.reset_code = code
-    user.reset_code_expires = datetime.utcnow() + timedelta(minutes=10)
+    user.reset_code_expires = datetime.now(timezone.utc) + timedelta(minutes=10)
     db.commit()
 
     success = send_reset_code_email(user.email, code)
@@ -66,7 +66,7 @@ def verify_code(req: VerifyCodeRequest, db: Session = Depends(get_db)):
     if not user or user.reset_code != req.code:
         raise HTTPException(status_code=400, detail="Invalid verification code")
 
-    if user.reset_code_expires < datetime.utcnow():
+    if user.reset_code_expires < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="Verification code has expired")
 
     return {"success": True, "message": "Code verified"}
@@ -77,7 +77,7 @@ def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
     if not user or user.reset_code != req.code:
         raise HTTPException(status_code=400, detail="Invalid verification code")
 
-    if user.reset_code_expires < datetime.utcnow():
+    if user.reset_code_expires < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="Verification code has expired")
 
     user.password_hash = get_password_hash(req.new_password)

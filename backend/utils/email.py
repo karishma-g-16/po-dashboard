@@ -15,6 +15,10 @@ def send_reset_code_email(to_email: str, code: str):
         return False
 
     try:
+        import socket
+        resolved_ip = socket.gethostbyname(settings.SMTP_HOST)
+        logger.info(f"Attempting to send email via {settings.SMTP_HOST} ({resolved_ip}) on port {settings.SMTP_PORT}")
+        
         msg = MIMEMultipart()
         msg['From'] = settings.SMTP_FROM
         msg['To'] = to_email

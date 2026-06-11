@@ -11,7 +11,9 @@ RUN apt-get update && apt-get install -y \
 
 COPY backend/requirements.txt .
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir --default-timeout=1000 --retries 10 -r requirements.txt
+# Force IPv4, use Google's mirror, disable cache, and increase timeout to bypass Render network hangs
+RUN pip install --no-cache-dir --default-timeout=1000 --retries=10 --index-url=https://pypi.org/simple/ -r requirements.txt
+
 
 COPY backend/ ./backend/
 ENV PYTHONPATH=/app

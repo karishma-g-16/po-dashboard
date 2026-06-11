@@ -1,6 +1,6 @@
 import os
 import logging
-from supabase import create_client, Client
+# from supabase import create_client, Client
 from backend.config import settings
 
 logger = logging.getLogger(__name__)
@@ -10,17 +10,18 @@ class StorageManager:
         self.supabase_url = settings.SUPABASE_URL
         self.supabase_key = settings.SUPABASE_KEY
         self.bucket_name = settings.SUPABASE_BUCKET
+        self.client = None
         
-        if self.supabase_url and self.supabase_key:
-            try:
-                self.client: Client = create_client(self.supabase_url, self.supabase_key)
-                logger.info("Supabase storage client initialized.")
-            except Exception as e:
-                logger.error(f"Failed to initialize Supabase client: {e}")
-                self.client = None
-        else:
-            logger.warning("Supabase credentials missing. Cloud storage disabled.")
-            self.client = None
+        # if self.supabase_url and self.supabase_key:
+        #     try:
+        #         self.client: Client = create_client(self.supabase_url, self.supabase_key)
+        #         logger.info("Supabase storage client initialized.")
+        #     except Exception as e:
+        #         logger.error(f"Failed to initialize Supabase client: {e}")
+        #         self.client = None
+        # else:
+        #     logger.warning("Supabase credentials missing. Cloud storage disabled.")
+        #     self.client = None
 
     async def upload_file(self, file_path: str, destination_path: str):
         """Upload a local file to Supabase storage"""

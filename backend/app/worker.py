@@ -2,11 +2,11 @@ import os
 import re
 import time
 import logging
-from celery import Celery
+# from celery import Celery
 from backend.config import settings
-from PIL import Image
-import PyPDF2
-import pandas as pd
+# from PIL import Image
+# import PyPDF2
+# import pandas as pd
 from backend.utils.gst_calc import calculate_gst
 from backend.utils.extraction import extract_smart_data
 from backend.utils.amount_extractor import AmountExtractor
@@ -16,23 +16,23 @@ from backend.database.models import PurchaseOrder
 
 logger = logging.getLogger(__name__)
 
-celery_app = Celery(
-    "worker",
-    broker=settings.REDIS_URL,
-    backend=settings.REDIS_URL
-)
+# celery_app = Celery(
+#     "worker",
+#     broker=settings.REDIS_URL,
+#     backend=settings.REDIS_URL
+# )
 
-# Standard stable config for redis 4.6.0
-celery_app.conf.update(
-    task_ignore_result=True,
-    broker_connection_retry_on_startup=True
-)
+# # Standard stable config for redis 4.6.0
+# celery_app.conf.update(
+#     task_ignore_result=True,
+#     broker_connection_retry_on_startup=True
+# )
 
 def parse_extraction(text):
     """Extract data using the shared robust utility"""
     return extract_smart_data(text)
 
-@celery_app.task(name="process_invoice_task")
+# @celery_app.task(name="process_invoice_task")
 def process_invoice_task(po_id: str):
     db = SessionLocal()
     po = None

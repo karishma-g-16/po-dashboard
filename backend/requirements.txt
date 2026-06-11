@@ -10,10 +10,9 @@ python-jose
 passlib
 bcrypt==4.0.1
 email-validator
-# Temporary removal of heavy libs to bypass Render network crash
-# pytesseract
-# Pillow
-# pdf2image
-# PyPDF2
-# pandas
-# openpyxl
+pytesseract>=0.3.10
+Pillow>=11.0.0
+pdf2image>=1.16.3
+PyPDF2>=3.0.1
+pandas>=2.2.0
+openpyxl>=3.1.2

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 import os
 import uuid
 import logging
-# import pandas as pd
+import pandas as pd
 
 from backend.database.db import get_db
 from backend.database.models import PurchaseOrder

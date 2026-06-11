@@ -92,17 +92,17 @@ const POTable = ({ pos, onDelete, onView, onDownload, userEmail, feePercentage =
                 {getStatusBadge(po.status)}
               </td>
               <td className="px-6 py-4 align-middle">
-                <div className="flex items-center justify-center space-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center justify-center space-x-1.5">
                   <button 
                     onClick={() => onView(po)}
-                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors" 
+                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" 
                     title="View Details"
                   >
                     <Eye className="w-4 h-4" />
                   </button>
                   <button 
                     onClick={() => onDownload(po)}
-                    className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors" 
+                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors" 
                     title="Download PDF"
                   >
                     <Download className="w-4 h-4" />

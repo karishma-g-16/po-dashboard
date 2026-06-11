@@ -5,6 +5,7 @@ import UploadForm from '../components/UploadForm';
 import POTable from '../components/POTable';
 import DocumentViewerModal from '../components/DocumentViewerModal';
 import PurchaseOrdersView from '../components/PurchaseOrdersView';
+import SettingsView from '../components/SettingsView';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 

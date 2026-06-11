@@ -30,7 +30,25 @@ def send_reset_code_email(to_email: str, code: str):
         msg['To'] = to_email
         msg['Subject'] = "Your Password Reset Verification Code"
 
-        # ... (body content same) ...
+        body = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <h2 style="color: #4f46e5; text-align: center;">Password Reset Request</h2>
+                    <p>Hello,</p>
+                    <p>We received a request to reset your password for your PO Management Dashboard account.</p>
+                    <p>Please use the following verification code to proceed with resetting your password:</p>
+                    <div style="background-color: #f8fafc; padding: 15px; text-align: center; border-radius: 6px; margin: 20px 0;">
+                        <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1e293b;">{code}</span>
+                    </div>
+                    <p>This code will expire in 10 minutes.</p>
+                    <p>If you did not request a password reset, please ignore this email.</p>
+                    <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+                    <p style="font-size: 12px; color: #64748b; text-align: center;">This is an automated message, please do not reply.</p>
+                </div>
+            </body>
+        </html>
+        """
         msg.attach(MIMEText(body, 'html'))
 
         # Use resolved_ip but pass the original hostname for SSL certificate verification

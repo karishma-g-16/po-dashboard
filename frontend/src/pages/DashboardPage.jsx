@@ -202,7 +202,7 @@ const DashboardPage = ({ user }) => {
 
       {/* Main Content - Pushed by sidebar width */}
       <main className="flex-1 flex flex-col ml-60 min-w-0 overflow-hidden">
-        {activeTab !== 'settings' ? (
+        {activeTab !== 'settings' && (
           <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
             <div className="relative w-full max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -245,13 +245,9 @@ const DashboardPage = ({ user }) => {
               </button>
             </div>
           </header>
-        ) : (
-          <header className="h-16 bg-white border-b border-slate-200 flex items-center px-8 sticky top-0 z-10">
-             {/* Empty header for structural consistency on Settings page */}
-          </header>
         )}
 
-        <div className="p-6 lg:p-8 space-y-6 overflow-y-auto">
+        <div className={`overflow-y-auto ${activeTab === 'settings' ? 'bg-white' : 'p-6 lg:p-8 space-y-6'}`}>
           {activeTab === 'dashboard' ? (
             <>
               <div>

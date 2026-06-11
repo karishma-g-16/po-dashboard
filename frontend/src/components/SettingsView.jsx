@@ -34,60 +34,73 @@ const SettingsView = ({ user, onLogout }) => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8 mt-4">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900">Settings</h2>
-        <p className="text-slate-500 text-sm">Manage your account preferences and settings.</p>
+    <div className="w-full max-w-[1000px] px-4 py-8 sm:px-6 md:px-8">
+      {/* Page Header */}
+      <div className="mb-10 border-b border-slate-200 pb-6">
+        <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Settings</h2>
+        <p className="text-slate-500 mt-2 text-sm">Manage your account preferences and security settings.</p>
       </div>
 
-      {/* Danger Zone */}
-      <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-        <div className="flex items-center space-x-3 text-red-600 mb-4">
-          <AlertTriangle className="w-6 h-6" />
-          <h3 className="text-lg font-bold">Danger Zone</h3>
+      {/* Danger Zone Section */}
+      <div className="bg-white border border-red-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+        <div className="flex items-start mb-6">
+          <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center shrink-0 mr-4 border border-red-100">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-slate-900">Danger Zone</h3>
+            <p className="text-slate-500 mt-1 text-sm leading-relaxed">
+              Permanently delete your account and all associated purchase orders. 
+              This action is not reversible. You will lose access to all your uploaded files and data.
+            </p>
+          </div>
         </div>
-        <p className="text-red-700 text-sm mb-6">
-          Permanently delete your account and all associated purchase orders. 
-          This action is not reversible. You will lose access to all your uploaded files and data.
-        </p>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 text-sm font-medium rounded-lg">
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-700 text-sm font-medium rounded-xl flex items-center">
+            <AlertTriangle className="w-4 h-4 mr-2 shrink-0" />
             {error}
           </div>
         )}
 
-        <form onSubmit={handleDeleteAccount} className="space-y-4 max-w-md">
-          <div>
-            <label className="block text-xs font-bold text-red-700 uppercase tracking-wider mb-2">Confirm Email</label>
+        <form onSubmit={handleDeleteAccount} className="space-y-6 max-w-xl">
+          <div className="space-y-1.5">
+            <label className="block text-sm font-semibold text-slate-700">
+              Confirm Email
+            </label>
             <input 
               type="email" 
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder={user?.email || "your-email@example.com"}
-              className="w-full px-4 py-2 bg-white border border-red-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
+              className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all shadow-sm placeholder-slate-400"
             />
           </div>
-          <div>
-            <label className="block text-xs font-bold text-red-700 uppercase tracking-wider mb-2">Type "delete my account"</label>
+          
+          <div className="space-y-1.5">
+            <label className="block text-sm font-semibold text-slate-700">
+              To verify, type <span className="text-slate-900 font-bold px-1.5 py-0.5 bg-slate-100 rounded">delete my account</span> below
+            </label>
             <input 
               type="text" 
               required
               value={confirmation}
               onChange={(e) => setConfirmation(e.target.value)}
-              placeholder="delete my account"
-              className="w-full px-4 py-2 bg-white border border-red-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
+              className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all shadow-sm"
             />
           </div>
-          <button 
-            type="submit" 
-            disabled={loading || confirmation !== 'delete my account' || email.toLowerCase() !== user?.email?.toLowerCase()}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span>{loading ? 'Deleting...' : 'Delete Account'}</span>
-          </button>
+          
+          <div className="pt-2">
+            <button 
+              type="submit" 
+              disabled={loading || confirmation !== 'delete my account' || email.toLowerCase() !== user?.email?.toLowerCase()}
+              className="w-full sm:w-auto bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold py-3 px-8 rounded-xl shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>{loading ? 'Deleting Account...' : 'Delete Account'}</span>
+            </button>
+          </div>
         </form>
       </div>
     </div>

@@ -11,8 +11,8 @@ def send_reset_code_email(to_email: str, code: str):
     Send a password reset verification code via email.
     """
     if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-        logger.warning(f"SMTP credentials not configured. Reset code for {to_email}: {code}")
-        return True # Simulate success for development
+        logger.error(f"SMTP credentials not configured. Cannot send email to {to_email}")
+        return False
 
     try:
         msg = MIMEMultipart()

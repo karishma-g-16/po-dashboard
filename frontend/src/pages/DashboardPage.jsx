@@ -202,54 +202,54 @@ const DashboardPage = ({ user }) => {
 
       {/* Main Content - Pushed by sidebar width */}
       <main className="flex-1 flex flex-col ml-60 min-w-0 overflow-hidden">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
-          {activeTab !== 'settings' ? (
-            <>
-              <div className="relative w-full max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input 
-                  type="text" 
-                  placeholder="Search by supplier, company or PO#..." 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all"
-                />
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                {user && ['karishmagautam178@gmail.com', 'ng965118@gmail.com'].includes(user.email?.toLowerCase()) && (
-                  <div className="flex items-center bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
-                    <label htmlFor="feeSelector" className="text-xs font-bold text-slate-500 mr-2 uppercase tracking-wider">Fee:</label>
-                    <select 
-                      id="feeSelector"
-                      value={feePercentage} 
-                      onChange={(e) => setFeePercentage(Number(e.target.value))}
-                      className="bg-transparent text-sm font-bold text-indigo-600 focus:outline-none cursor-pointer"
-                    >
-                      <option value={4}>4.0%</option>
-                      <option value={3.75}>3.75%</option>
-                    </select>
-                  </div>
-                )}
-                <button onClick={() => fetchPos(searchTerm)} className="p-2 text-slate-400 hover:text-slate-600 transition-all">
-                  <RefreshCcw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
-                </button>
-                <button className="p-2 text-slate-400 hover:text-slate-600 transition-all">
-                  <Bell className="w-5 h-5" />
-                </button>
-                <button 
-                  onClick={() => setShowUpload(true)}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center space-x-2 shadow-sm transition-all"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>+ New Invoice</span>
-                </button>
-              </div>
-            </>
-          ) : (
-            <div></div> // Empty div to maintain flex layout if needed, or just let it be empty
-          )}
-        </header>
+        {activeTab !== 'settings' ? (
+          <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search by supplier, company or PO#..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all"
+              />
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              {user && ['karishmagautam178@gmail.com', 'ng965118@gmail.com'].includes(user.email?.toLowerCase()) && (
+                <div className="flex items-center bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                  <label htmlFor="feeSelector" className="text-xs font-bold text-slate-500 mr-2 uppercase tracking-wider">Fee:</label>
+                  <select 
+                    id="feeSelector"
+                    value={feePercentage} 
+                    onChange={(e) => setFeePercentage(Number(e.target.value))}
+                    className="bg-transparent text-sm font-bold text-indigo-600 focus:outline-none cursor-pointer"
+                  >
+                    <option value={4}>4.0%</option>
+                    <option value={3.75}>3.75%</option>
+                  </select>
+                </div>
+              )}
+              <button onClick={() => fetchPos(searchTerm)} className="p-2 text-slate-400 hover:text-slate-600 transition-all">
+                <RefreshCcw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
+              <button className="p-2 text-slate-400 hover:text-slate-600 transition-all">
+                <Bell className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={() => setShowUpload(true)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center space-x-2 shadow-sm transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ New Invoice</span>
+              </button>
+            </div>
+          </header>
+        ) : (
+          <header className="h-16 bg-white border-b border-slate-200 flex items-center px-8 sticky top-0 z-10">
+             {/* Empty header for structural consistency on Settings page */}
+          </header>
+        )}
 
         <div className="p-6 lg:p-8 space-y-6 overflow-y-auto">
           {activeTab === 'dashboard' ? (

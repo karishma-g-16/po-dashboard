@@ -34,7 +34,7 @@ const SettingsView = ({ user, onLogout }) => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="max-w-3xl mx-auto space-y-8 mt-4">
       <div>
         <h2 className="text-2xl font-bold text-slate-900">Settings</h2>
         <p className="text-slate-500 text-sm">Manage your account preferences and settings.</p>

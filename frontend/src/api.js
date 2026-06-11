@@ -53,6 +53,10 @@ export const authApi = {
     });
     return response.data;
   },
+  deleteAccount: async (email, confirmation) => {
+    const response = await api.post('/auth/delete-account', { email, confirmation });
+    return response.data;
+  },
 };
 
 export const poApi = {

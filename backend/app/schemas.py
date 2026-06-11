@@ -40,6 +40,10 @@ class ResetPasswordRequest(BaseModel):
     code: str
     new_password: str
 
+class DeleteAccountRequest(BaseModel):
+    email: EmailStr
+    confirmation: str
+
 class PurchaseOrderResponse(BaseModel):
     id: UUID
     company_name: Optional[str]

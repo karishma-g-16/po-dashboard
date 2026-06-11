@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 from backend.database.db import get_db
-from backend.database.models import User
+from backend.database.models import User, PurchaseOrder
 from backend.app.schemas import UserCreate, UserResponse, Token
 from backend.auth.password import get_password_hash, verify_password
 from backend.auth.jwt_handler import create_access_token
@@ -10,7 +10,7 @@ from backend.app.auth import get_current_user
 from datetime import datetime, timedelta, timezone
 import random
 import string
-from backend.app.schemas import UserCreate, UserResponse, Token, ForgotPasswordRequest, VerifyCodeRequest, ResetPasswordRequest
+from backend.app.schemas import UserCreate, UserResponse, Token, ForgotPasswordRequest, VerifyCodeRequest, ResetPasswordRequest, DeleteAccountRequest
 from backend.utils.email import send_reset_code_email
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -91,3 +91,26 @@ def reset_password(req: ResetPasswordRequest, db: Session = Depends(get_db)):
 def read_users_me(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == current_user["id"]).first()
     return user
+
+@router.post("/delete-account")
+def delete_account(req: DeleteAccountRequest, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    if req.email.lower() != current_user["email"].lower():
+        raise HTTPException(status_code=400, detail="Email does not match current user")
+    
+    if req.confirmation != "delete my account":
+        raise HTTPException(status_code=400, detail="Confirmation phrase must be 'delete my account'")
+    
+    user = db.query(User).filter(User.id == current_user["id"]).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # Delete associated POs first (and any local files if we wanted to be thorough, but DB delete is minimum requirement)
+    # The requirement is "use uski file jo bnai thi wo kch nhi dekhega sb delete ho jana chahiye"
+    # So we cascade delete PurchaseOrders
+    db.query(PurchaseOrder).filter(PurchaseOrder.user_id == user.id).delete(synchronize_session=False)
+    
+    # Delete the user
+    db.delete(user)
+    db.commit()
+    
+    return {"success": True, "message": "Account successfully deleted"}

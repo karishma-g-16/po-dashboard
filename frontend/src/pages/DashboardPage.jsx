@@ -170,10 +170,13 @@ const DashboardPage = ({ user }) => {
             <FileText className="w-5 h-5" />
             <span className="font-medium">Purchase Orders</span>
           </button>
-          <a href="#" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-white/5 transition-all text-slate-300">
+          <button 
+            onClick={() => setActiveTab('settings')}
+            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-all ${activeTab === 'settings' ? 'bg-white/10 text-indigo-400' : 'hover:bg-white/5 text-slate-300'}`}
+          >
             <Settings className="w-5 h-5" />
-            <span>Settings</span>
-          </a>
+            <span className="font-medium">Settings</span>
+          </button>
         </nav>
 
         <div className="p-4 border-t border-white/10">
@@ -302,6 +305,8 @@ const DashboardPage = ({ user }) => {
                 </div>
               </div>
             </>
+          ) : activeTab === 'settings' ? (
+            <SettingsView user={user} onLogout={handleLogout} />
           ) : (
             <PurchaseOrdersView pos={pos} />
           )}

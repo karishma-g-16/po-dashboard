@@ -10,7 +10,7 @@ const POTable = ({ pos, onDelete, onView, onDownload, userEmail, feePercentage =
   };
 
   const isAuthorizedToDelete = useMemo(() => {
-    const authorized = ["ng965118@gmail.com", "karishmagautam178@gmail.com"];
+    const authorized = ["karishmagautam178@gmail.com"];
     if (!userEmail) return false;
     const cleanEmail = userEmail.trim().toLowerCase();
     return authorized.some(email => email.toLowerCase() === cleanEmail);

@@ -220,7 +220,7 @@ const DashboardPage = ({ user }) => {
                 className="bg-transparent text-sm font-bold text-indigo-600 focus:outline-none cursor-pointer"
               >
                 <option value={4}>4.0%</option>
-                <option value={3.5}>3.5%</option>
+                <option value={3.75}>3.75%</option>
               </select>
             </div>
             <button onClick={() => fetchPos(searchTerm)} className="p-2 text-slate-400 hover:text-slate-600 transition-all">

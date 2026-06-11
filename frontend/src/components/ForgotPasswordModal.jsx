@@ -33,6 +33,7 @@ const ForgotPasswordModal = ({ onClose }) => {
     setError('');
     try {
       await authApi.verifyCode(email, code);
+      setMessage('');
       setStep(3);
     } catch (err) {
       setError(err.response?.data?.detail || 'Invalid verification code');

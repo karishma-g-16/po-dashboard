@@ -8,26 +8,40 @@ const SettingsView = ({ user, onLogout }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Robust validation constants
+  const isConfirmationValid = confirmation.trim().toLowerCase() === 'delete my account';
+  const isEmailValid = email.trim().toLowerCase() === (user?.email || '').trim().toLowerCase();
+
   const handleDeleteAccount = async (e) => {
     e.preventDefault();
-    if (confirmation !== 'delete my account') {
+    console.log("Delete account clicked");
+
+    if (!isConfirmationValid) {
+      console.log("Validation failed: Incorrect confirmation text");
       setError("Please type 'delete my account' exactly to confirm.");
       return;
     }
-    if (email.toLowerCase() !== user?.email.toLowerCase()) {
+    if (!isEmailValid) {
+      console.log("Validation failed: Email mismatch");
       setError("Email does not match your account.");
       return;
     }
 
+    console.log("Validation passed");
+
     if (window.confirm("Are you absolutely sure? This action CANNOT be undone.")) {
       setLoading(true);
       setError('');
+      console.log("Sending delete request");
+      
       try {
-        await authApi.deleteAccount(email, confirmation);
-        alert("Your account and all associated data have been deleted.");
-        onLogout();
+        const response = await authApi.deleteAccount(email.trim(), confirmation.trim());
+        console.log("Delete response:", response);
+        alert("Your account and all associated data have been successfully deleted.");
+        onLogout(); // Clears session and redirects to login
       } catch (err) {
-        setError(err.response?.data?.detail || "Failed to delete account");
+        console.error("Delete account error:", err);
+        setError(err.response?.data?.detail || "Failed to delete account. Please try again.");
         setLoading(false);
       }
     }
@@ -94,7 +108,7 @@ const SettingsView = ({ user, onLogout }) => {
           <div className="pt-2">
             <button 
               type="submit" 
-              disabled={loading || confirmation !== 'delete my account' || email.toLowerCase() !== user?.email?.toLowerCase()}
+              disabled={loading || !isConfirmationValid || !isEmailValid}
               className="w-full sm:w-auto bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold py-3 px-8 rounded-xl shadow-sm transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Trash2 className="w-4 h-4" />

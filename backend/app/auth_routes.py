@@ -94,23 +94,28 @@ def read_users_me(current_user: dict = Depends(get_current_user), db: Session = 
 
 @router.post("/delete-account")
 def delete_account(req: DeleteAccountRequest, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    if req.email.lower() != current_user["email"].lower():
+    # 1. Validation: Trim whitespace and lowercase
+    if req.email.strip().lower() != current_user["email"].strip().lower():
         raise HTTPException(status_code=400, detail="Email does not match current user")
     
-    if req.confirmation != "delete my account":
+    if req.confirmation.strip().lower() != "delete my account":
         raise HTTPException(status_code=400, detail="Confirmation phrase must be 'delete my account'")
     
     user = db.query(User).filter(User.id == current_user["id"]).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
-    # Delete associated POs first (and any local files if we wanted to be thorough, but DB delete is minimum requirement)
-    # The requirement is "use uski file jo bnai thi wo kch nhi dekhega sb delete ho jana chahiye"
-    # So we cascade delete PurchaseOrders
-    db.query(PurchaseOrder).filter(PurchaseOrder.user_id == user.id).delete(synchronize_session=False)
-    
-    # Delete the user
-    db.delete(user)
-    db.commit()
-    
-    return {"success": True, "message": "Account successfully deleted"}
+    try:
+        # 2. Delete associated Purchase Orders (Cascade Delete)
+        db.query(PurchaseOrder).filter(PurchaseOrder.user_id == user.id).delete(synchronize_session=False)
+        
+        # 3. Delete the user account
+        db.delete(user)
+        db.commit()
+        
+        return {"success": True, "message": "Account successfully deleted"}
+    except Exception as e:
+        db.rollback()
+        # Log the exact error to the server console for debugging
+        print(f"CRITICAL ERROR deleting account: {str(e)}") 
+        raise HTTPException(status_code=500, detail="Failed to delete account from database. Please try again.")

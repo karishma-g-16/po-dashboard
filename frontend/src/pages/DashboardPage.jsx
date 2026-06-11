@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { LogOut, LayoutDashboard, FileText, Settings, Bell, Search, Plus, RefreshCcw, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { LogOut, LayoutDashboard, FileText, Settings, Bell, Search, Plus, RefreshCcw, Layers, Activity, Receipt, Wallet } from 'lucide-react';
 import { poApi } from '../api';
 import UploadForm from '../components/UploadForm';
 import POTable from '../components/POTable';
@@ -148,143 +148,174 @@ const DashboardPage = ({ user }) => {
   const totalPcs = pos.reduce((acc, po) => acc + Number(po.ordered_quantity || 0), 0);
   const totalFee = pos.reduce((acc, po) => acc + (Number(po.base_amount || 0) * (feePercentage / 100)), 0);
 
+  const isAdmin = user && ['karishmagautam178@gmail.com', 'ng965118@gmail.com'].includes(user.email?.toLowerCase());
+
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-[#fafafa] flex font-sans text-slate-900">
       {/* Sidebar - Fixed width */}
-      <aside className="w-60 bg-[#1e293b] text-white flex flex-col fixed inset-y-0 z-20">
+      <aside className="w-64 bg-[#111827] text-white flex flex-col fixed inset-y-0 z-20 shadow-xl border-r border-slate-800">
         <div className="p-6">
-          <h1 className="text-xl font-bold tracking-tight text-white">PO Dashboard</h1>
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center shadow-inner">
+              <FileText className="w-5 h-5 text-white" />
+            </div>
+            <h1 className="text-lg font-bold tracking-tight text-white">PO Dashboard</h1>
+          </div>
         </div>
         
-        <nav className="flex-1 px-4 space-y-2">
+        <nav className="flex-1 px-4 py-4 space-y-1.5">
           <button 
             onClick={() => setActiveTab('dashboard')}
-            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-all ${activeTab === 'dashboard' ? 'bg-white/10 text-indigo-400' : 'hover:bg-white/5 text-slate-300'}`}
+            className={`relative w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
           >
-            <LayoutDashboard className="w-5 h-5" />
-            <span className="font-medium">Dashboard</span>
+            {activeTab === 'dashboard' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-indigo-500 rounded-r-full shadow-[0_0_8px_rgba(99,102,241,0.6)]" />}
+            <LayoutDashboard className="w-5 h-5 shrink-0" />
+            <span className="font-medium text-[14px]">Dashboard</span>
           </button>
+          
           <button 
             onClick={() => setActiveTab('purchase_orders')}
-            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-all ${activeTab === 'purchase_orders' ? 'bg-white/10 text-indigo-400' : 'hover:bg-white/5 text-slate-300'}`}
+            className={`relative w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${activeTab === 'purchase_orders' ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
           >
-            <FileText className="w-5 h-5" />
-            <span className="font-medium">Purchase Orders</span>
+            {activeTab === 'purchase_orders' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-indigo-500 rounded-r-full shadow-[0_0_8px_rgba(99,102,241,0.6)]" />}
+            <FileText className="w-5 h-5 shrink-0" />
+            <span className="font-medium text-[14px]">Purchase Orders</span>
           </button>
+          
           <button 
             onClick={() => setActiveTab('settings')}
-            className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-all ${activeTab === 'settings' ? 'bg-white/10 text-indigo-400' : 'hover:bg-white/5 text-slate-300'}`}
+            className={`relative w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${activeTab === 'settings' ? 'bg-indigo-500/10 text-indigo-400' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'}`}
           >
-            <Settings className="w-5 h-5" />
-            <span className="font-medium">Settings</span>
+            {activeTab === 'settings' && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-indigo-500 rounded-r-full shadow-[0_0_8px_rgba(99,102,241,0.6)]" />}
+            <Settings className="w-5 h-5 shrink-0" />
+            <span className="font-medium text-[14px]">Settings</span>
           </button>
         </nav>
 
-        <div className="p-4 border-t border-white/10">
+        <div className="p-4 border-t border-slate-800/80 bg-slate-900/30">
           <div className="flex items-center space-x-3 mb-4 px-2">
-            <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-white uppercase">
-              {user?.first_name?.charAt(0) || 'U'}
+            <div className="relative shrink-0">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-white uppercase shadow-sm">
+                {user?.first_name?.charAt(0) || 'U'}
+              </div>
+              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-[#111827] rounded-full"></div>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user?.first_name} {user?.last_name}</p>
-              <p className="text-[10px] text-slate-400 truncate uppercase">{user?.company_name}</p>
+              <p className="text-[13px] font-semibold text-slate-100 truncate">{user?.first_name} {user?.last_name}</p>
+              <div className="flex items-center space-x-1.5 mt-0.5">
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-indigo-400">{isAdmin ? 'Admin' : 'User'}</span>
+                <span className="w-1 h-1 rounded-full bg-slate-600"></span>
+                <p className="text-[11px] text-slate-400 truncate">{user?.company_name}</p>
+              </div>
             </div>
           </div>
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-white/5 transition-all text-slate-300"
+            className="w-full flex items-center justify-center space-x-2 px-3 py-2.5 rounded-lg hover:bg-red-500/10 hover:text-red-400 transition-colors text-slate-400"
           >
-            <LogOut className="w-5 h-5" />
-            <span>Sign out</span>
+            <LogOut className="w-4 h-4" />
+            <span className="text-[13px] font-medium">Sign out</span>
           </button>
         </div>
       </aside>
 
       {/* Main Content - Pushed by sidebar width */}
-      <main className="flex-1 flex flex-col ml-60 min-w-0 overflow-hidden">
+      <main className="flex-1 flex flex-col ml-64 min-w-0 overflow-hidden">
         {activeTab !== 'settings' && (
-          <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
-            <div className="relative w-full max-w-md">
+          <header className="h-14 bg-white/80 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between px-8 sticky top-0 z-10">
+            <div className="relative w-full max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input 
                 type="text" 
-                placeholder="Search by supplier, company or PO#..." 
+                placeholder="Search orders, suppliers..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all"
+                className="w-full pl-9 pr-4 py-1.5 bg-slate-100/50 border border-slate-200/60 rounded-md text-[13px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400 shadow-sm"
               />
             </div>
             
-            <div className="flex items-center space-x-4">
-              {user && ['karishmagautam178@gmail.com', 'ng965118@gmail.com'].includes(user.email?.toLowerCase()) && (
-                <div className="flex items-center bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
-                  <label htmlFor="feeSelector" className="text-xs font-bold text-slate-500 mr-2 uppercase tracking-wider">Fee:</label>
+            <div className="flex items-center space-x-3">
+              {isAdmin && (
+                <div className="flex items-center bg-white px-2 py-1 rounded-md border border-slate-200 shadow-sm">
+                  <label htmlFor="feeSelector" className="text-[11px] font-bold text-slate-500 mr-2 uppercase tracking-widest">Fee</label>
                   <select 
                     id="feeSelector"
                     value={feePercentage} 
                     onChange={(e) => setFeePercentage(Number(e.target.value))}
-                    className="bg-transparent text-sm font-bold text-indigo-600 focus:outline-none cursor-pointer"
+                    className="bg-transparent text-[13px] font-semibold text-indigo-600 focus:outline-none cursor-pointer"
                   >
                     <option value={4}>4.0%</option>
                     <option value={3.75}>3.75%</option>
                   </select>
                 </div>
               )}
-              <button onClick={() => fetchPos(searchTerm)} className="p-2 text-slate-400 hover:text-slate-600 transition-all">
-                <RefreshCcw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+              
+              <div className="h-4 w-px bg-slate-200 mx-1"></div>
+              
+              <button onClick={() => fetchPos(searchTerm)} className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors" title="Refresh Data">
+                <RefreshCcw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               </button>
-              <button className="p-2 text-slate-400 hover:text-slate-600 transition-all">
-                <Bell className="w-5 h-5" />
+              
+              <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors relative" title="Notifications">
+                <Bell className="w-4 h-4" />
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white"></span>
               </button>
+              
               <button 
                 onClick={() => setShowUpload(true)}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center space-x-2 shadow-sm transition-all"
+                className="ml-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white px-3.5 py-1.5 rounded-md font-medium text-[13px] flex items-center space-x-2 shadow-sm transition-all"
               >
-                <Plus className="w-4 h-4" />
-                <span>+ New Invoice</span>
+                <Plus className="w-3.5 h-3.5" />
+                <span>New Invoice</span>
               </button>
             </div>
           </header>
         )}
 
-        <div className={`overflow-y-auto ${activeTab === 'settings' ? 'bg-white' : 'p-6 lg:p-8 space-y-6'}`}>
+        <div className={`overflow-y-auto ${activeTab === 'settings' ? 'bg-[#fafafa]' : 'p-8 space-y-8'}`}>
           {activeTab === 'dashboard' ? (
-            <>
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900">Dashboard Overview</h2>
-                <p className="text-slate-500 text-sm">Welcome back, {user?.first_name}.</p>
+            <div className="max-w-[1400px] mx-auto w-full">
+              {/* Dashboard Header */}
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard Overview</h2>
+                <p className="text-slate-500 mt-1 text-[14px]">Welcome back, {user?.first_name}. Here's what's happening today.</p>
               </div>
 
-              {/* Stats Grid - Fixed wrap issue */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5">
                 {[
-                  { label: 'Total Invoices', value: pos.length, detail: searchTerm ? 'Filtered records' : 'Lifetime uploads' },
-                  { label: 'Total PCS', value: totalPcs.toLocaleString('en-IN'), detail: 'Ordered Quantity' },
-                  { label: `Total ${feePercentage}% Amount`, value: `₹${totalFee.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, detail: 'Fee Calculation', color: 'text-indigo-600' },
-                  { label: 'GST Total', value: `₹${totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, detail: '18% Component' },
-                  { label: 'Total Amount', value: `₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, detail: 'Incl. GST' },
+                  { label: 'Total Invoices', value: pos.length, detail: searchTerm ? 'Filtered records' : 'Lifetime uploads', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50/80', border: 'border-blue-100' },
+                  { label: 'Total PCS', value: totalPcs.toLocaleString('en-IN'), detail: 'Ordered Quantity', icon: Layers, color: 'text-emerald-600', bg: 'bg-emerald-50/80', border: 'border-emerald-100' },
+                  { label: `Fee Amount (${feePercentage}%)`, value: `₹${totalFee.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, detail: 'Platform fee calculation', icon: Activity, color: 'text-indigo-600', bg: 'bg-indigo-50/80', border: 'border-indigo-100' },
+                  { label: 'Total GST', value: `₹${totalGst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, detail: '18% Component', icon: Receipt, color: 'text-amber-600', bg: 'bg-amber-50/80', border: 'border-amber-100' },
+                  { label: 'Total Volume', value: `₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, detail: 'Incl. GST', icon: Wallet, color: 'text-slate-700', bg: 'bg-slate-100/80', border: 'border-slate-200' },
                 ].map((stat, i) => (
-                  <div key={i} className="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
-                    <p className={`text-2xl font-bold mt-1 ${stat.color || 'text-slate-900'}`}>{stat.value}</p>
-                    <p className="text-[10px] text-slate-400 mt-1 font-medium italic">{stat.detail}</p>
+                  <div key={i} className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow group flex flex-col justify-between h-[130px]">
+                    <div className="flex justify-between items-start">
+                      <p className="text-[13px] font-semibold text-slate-500 tracking-wide">{stat.label}</p>
+                      <div className={`p-1.5 rounded-lg ${stat.bg} ${stat.border} border shadow-sm`}>
+                        <stat.icon className={`w-4 h-4 ${stat.color}`} />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-slate-900 tracking-tight mt-2">{stat.value}</h3>
+                      <p className="text-[11px] text-slate-400 mt-1 font-medium">{stat.detail}</p>
+                    </div>
                   </div>
                 ))}
               </div>
 
               {/* Table Container */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                  <h3 className="font-bold text-slate-900">Recent Purchase Orders</h3>
-                  <div className="flex items-center space-x-4">
-                    <button onClick={() => poApi.exportCsv()} className="text-xs font-bold text-indigo-600 hover:underline">CSV</button>
-                    <button onClick={() => poApi.exportExcel()} className="text-xs font-bold text-indigo-600 hover:underline">Excel</button>
-                    <span className="text-slate-300">|</span>
-                    <button className="text-xs font-bold text-slate-500 hover:text-slate-700">View all</button>
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden mt-8">
+                <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-white/50 backdrop-blur-sm">
+                  <h3 className="text-lg font-bold text-slate-900 tracking-tight">Recent Purchase Orders</h3>
+                  <div className="flex items-center space-x-2">
+                    <button onClick={() => poApi.exportCsv()} className="px-3 py-1.5 text-[13px] font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent hover:border-slate-200 rounded-lg transition-all shadow-sm">CSV Export</button>
+                    <button onClick={() => poApi.exportExcel()} className="px-3 py-1.5 text-[13px] font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent hover:border-slate-200 rounded-lg transition-all shadow-sm">Excel Export</button>
                   </div>
                 </div>
                 
-                <div className="p-0 overflow-x-auto">
+                <div className="p-0">
                     {pos.length > 0 ? (
                     <POTable 
                         pos={pos} 
@@ -295,25 +326,29 @@ const DashboardPage = ({ user }) => {
                         feePercentage={feePercentage}
                     />
                     ) : searchTerm ? (
-                    <div className="p-20 text-center text-slate-400">
-                        <Search className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                        <p className="font-medium text-slate-500">No records found for "{searchTerm}"</p>
-                        <button onClick={() => setSearchTerm('')} className="mt-2 text-indigo-600 font-bold hover:underline">Clear search</button>
+                    <div className="py-24 text-center text-slate-400 bg-slate-50/30">
+                        <Search className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                        <p className="font-medium text-slate-600 text-[15px]">No records found for "{searchTerm}"</p>
+                        <p className="text-slate-400 text-[13px] mt-1">Try adjusting your search criteria</p>
+                        <button onClick={() => setSearchTerm('')} className="mt-4 text-indigo-600 font-semibold text-[14px] hover:text-indigo-700 transition-colors">Clear search</button>
                     </div>
                     ) : (
-                    <div className="p-20 text-center text-slate-400">
-                        <FileText className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                        <p className="font-medium text-slate-500">No invoices found yet</p>
-                        <button onClick={() => setShowUpload(true)} className="mt-2 text-indigo-600 font-bold hover:underline">Upload your first PO</button>
+                    <div className="py-24 text-center text-slate-400 bg-slate-50/30">
+                        <FileText className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                        <p className="font-medium text-slate-600 text-[15px]">No invoices uploaded yet</p>
+                        <p className="text-slate-400 text-[13px] mt-1">Get started by uploading your first Purchase Order</p>
+                        <button onClick={() => setShowUpload(true)} className="mt-4 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 font-semibold px-4 py-2 rounded-lg transition-colors text-[14px]">Upload Invoice</button>
                     </div>
                     )}
                 </div>
               </div>
-            </>
+            </div>
           ) : activeTab === 'settings' ? (
             <SettingsView user={user} onLogout={handleLogout} />
           ) : (
-            <PurchaseOrdersView pos={pos} />
+            <div className="max-w-[1400px] mx-auto w-full">
+              <PurchaseOrdersView pos={pos} />
+            </div>
           )}
         </div>
       </main>

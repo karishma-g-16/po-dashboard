@@ -9,6 +9,7 @@ python-multipart
 python-jose
 passlib
 bcrypt==4.0.1
+email-validator
 # Temporary removal of heavy libs to bypass Render network crash
 # pytesseract
 # Pillow
